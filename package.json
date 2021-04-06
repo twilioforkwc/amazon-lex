@@ -1,0 +1,18 @@
+{
+  "name": "flex-amazon-lex",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "twilio-run --env",
+    "deploy": "twilio serverless:deploy -p FlexPreview --force",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Katsumi Takahashi",
+  "license": "ISC",
+  "devDependencies": {
+    "twilio-run": "^2.9.0"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.878.0"
+  }
+}
