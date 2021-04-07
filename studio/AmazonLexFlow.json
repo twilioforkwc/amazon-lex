@@ -1,0 +1,214 @@
+{
+    "description": "Bot flow for creating a Flex webchat task",
+    "states": [
+      {
+        "name": "Trigger",
+        "type": "trigger",
+        "transitions": [
+          {
+            "next": "SetMessage",
+            "event": "incomingMessage"
+          },
+          {
+            "event": "incomingCall"
+          },
+          {
+            "event": "incomingRequest"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": -30,
+            "y": 0
+          }
+        }
+      },
+      {
+        "name": "SendMessageToAgent",
+        "type": "send-to-flex",
+        "transitions": [
+          {
+            "event": "callComplete"
+          },
+          {
+            "event": "failedToEnqueue"
+          },
+          {
+            "event": "callFailure"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 240,
+            "y": 1260
+          },
+          "workflow": "",
+          "channel": "",
+          "attributes": "{\"name\": \"{{trigger.message.ChannelAttributes.from}}\", \"channelType\": \"{{trigger.message.ChannelAttributes.channel_type}}\", \"channelSid\": \"{{trigger.message.ChannelSid}}\", \"record\": 3, \"Slots\": \"{{widgets.LexTalk.parsed.slots}}\" }"
+        }
+      },
+      {
+        "name": "LexTalk",
+        "type": "run-function",
+        "transitions": [
+          {
+            "next": "IsEnded",
+            "event": "success"
+          },
+          {
+            "event": "fail"
+          }
+        ],
+        "properties": {
+          "service_sid": "",
+          "environment_sid": "",
+          "offset": {
+            "x": 0,
+            "y": 400
+          },
+          "function_sid": "",
+          "parameters": [
+            {
+              "value": "{{flow.variables.message}}",
+              "key": "message"
+            },
+            {
+              "value": "{{trigger.message.To}}",
+              "key": "user"
+            }
+          ],
+          "url": "https://flex-amazon-lex-XXXX-dev.twil.io/talk"
+        }
+      },
+      {
+        "name": "Reply",
+        "type": "send-and-wait-for-reply",
+        "transitions": [
+          {
+            "next": "SetReplyMessage",
+            "event": "incomingMessage"
+          },
+          {
+            "event": "timeout"
+          },
+          {
+            "event": "deliveryFailure"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": -40,
+            "y": 970
+          },
+          "service": "{{trigger.message.InstanceSid}}",
+          "channel": "{{trigger.message.ChannelSid}}",
+          "from": "{{flow.channel.address}}",
+          "body": "{{widgets.LexTalk.parsed.message}}",
+          "timeout": "3600"
+        }
+      },
+      {
+        "name": "SetMessage",
+        "type": "set-variables",
+        "transitions": [
+          {
+            "next": "LexTalk",
+            "event": "next"
+          }
+        ],
+        "properties": {
+          "variables": [
+            {
+              "value": "{{trigger.message.Body}}",
+              "key": "message"
+            }
+          ],
+          "offset": {
+            "x": 40,
+            "y": 150
+          }
+        }
+      },
+      {
+        "name": "SetReplyMessage",
+        "type": "set-variables",
+        "transitions": [
+          {
+            "next": "LexTalk",
+            "event": "next"
+          }
+        ],
+        "properties": {
+          "variables": [
+            {
+              "value": "{{widgets.Reply.inbound.Body}}",
+              "key": "message"
+            }
+          ],
+          "offset": {
+            "x": -360,
+            "y": 1270
+          }
+        }
+      },
+      {
+        "name": "IsEnded",
+        "type": "split-based-on",
+        "transitions": [
+          {
+            "next": "Reply",
+            "event": "noMatch"
+          },
+          {
+            "next": "SwitchToAgent",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "If value equal_to ReadyForFulfillment",
+                "arguments": [
+                  "{{widgets.LexTalk.parsed.dialogState}}"
+                ],
+                "type": "equal_to",
+                "value": "ReadyForFulfillment"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "input": "{{widgets.LexTalk.parsed.dialogState}}",
+          "offset": {
+            "x": -60,
+            "y": 650
+          }
+        }
+      },
+      {
+        "name": "SwitchToAgent",
+        "type": "send-message",
+        "transitions": [
+          {
+            "next": "SendMessageToAgent",
+            "event": "sent"
+          },
+          {
+            "event": "failed"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 370,
+            "y": 970
+          },
+          "service": "{{trigger.message.InstanceSid}}",
+          "channel": "{{trigger.message.ChannelSid}}",
+          "from": "{{flow.channel.address}}",
+          "to": "{{contact.channel.address}}",
+          "body": "では、ここから先はオペレータに変わります。このまましばらくお待ち下さい。"
+        }
+      }
+    ],
+    "initial_state": "Trigger",
+    "flags": {
+      "allow_concurrent_calls": true
+    }
+  }
